@@ -20,9 +20,9 @@ class HellolagomEntity extends PersistentEntity {
 
   override def behavior: Behavior = {
     Actions()
-      .onCommand[UpdateMapCmd, Map[String, Seq[String]]] {
+      .onCommand[UpdateMapCmd, UpdateMapReply] {
         case (UpdateMapCmd(map), ctx, state) =>
-          ctx.thenPersist(MapUpdatedEvt(map))(_ => ctx.reply(map))
+          ctx.thenPersist(MapUpdatedEvt(map))(_ => ctx.reply(UpdateMapReply(map)))
       }.onEvent {
         case (MapUpdatedEvt(map), state) => HellolagomState(map)
       }
@@ -38,7 +38,9 @@ object HellolagomState {
 sealed trait HellolagomCommand
 
 final case class UpdateMapCmd(settings: Map[String, Seq[String]]) extends
-  HellolagomCommand with ReplyType[Map[String, Seq[String]]]
+  HellolagomCommand with ReplyType[UpdateMapReply]
+
+final case class UpdateMapReply(updated: Map[String, Seq[String]])
 
 sealed trait HellolagomEvent extends AggregateEvent[HellolagomEvent] {
   def aggregateTag = HellolagomEvent.Tag
@@ -53,6 +55,7 @@ final case class MapUpdatedEvt(settings: Map[String, Seq[String]]) extends Hello
 object HellolagomSerializerRegistry extends JsonSerializerRegistry {
   override def serializers: Seq[JsonSerializer[_]] = Seq(
     JsonSerializer(Json.format[UpdateMapCmd]),
+    JsonSerializer(Json.format[UpdateMapReply]),
     JsonSerializer(Json.format[MapUpdatedEvt]),
     JsonSerializer(Json.format[HellolagomState])
   )
